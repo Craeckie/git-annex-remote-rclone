@@ -167,7 +167,7 @@ while read -r line; do
 					if [ ! -e "$file" ]; then
 						echo TRANSFER-FAILURE STORE "$key" "asked to store non-existent file $file"
 					else	
-						if runcmd rclone copy "$file" "$LOC"; then
+						if runcmd rclone copy --checkers 2 --tpslimit 8 --tpslimit-burst 20 "$file" "$LOC"; then
 							echo TRANSFER-SUCCESS STORE "$key"
 						else
 							echo TRANSFER-FAILURE STORE "$key"
@@ -181,7 +181,7 @@ while read -r line; do
 					calclocation "$key"
 					# http://stackoverflow.com/questions/31396985/why-is-mktemp-on-os-x-broken-with-a-command-that-worked-on-linux
 					if GA_RC_TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/rclone-annex-tmp.XXXXXXXXX") &&
-					    runcmd rclone copy "$LOC$key" $GA_RC_TEMP_DIR &&
+					    runcmd rclone copy --checkers 2 --tpslimit 8 --tpslimit-burst 20 "$LOC$key" $GA_RC_TEMP_DIR &&
 					    mv $GA_RC_TEMP_DIR/$key $file &&
 					    rmdir $GA_RC_TEMP_DIR; then
 						echo TRANSFER-SUCCESS RETRIEVE "$key"
@@ -198,7 +198,7 @@ while read -r line; do
 			# Any nonzero object count means present.
 			# Some rclone backends support multiple
 			# files under one name.
-			if check_result=$(rclone size --json "$LOC$key" 2>&1) &&
+			if check_result=$(rclone size --contimeout 5s --json "$LOC$key" 2>&1) &&
 			    echo "$check_result" | grep '"count":' >/dev/null; then
 				if echo "$check_result" | grep -E '"count":\s*[1-9][0-9]*' >/dev/null; then
 					echo CHECKPRESENT-SUCCESS "$key"
